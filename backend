@@ -1,0 +1,47 @@
+from flask import Flask, jsonify
+import requests
+import threading
+
+app = Flask(__name__)
+
+WINDOW_SIZE = 10
+stored_numbers = []
+lock = threading.Lock()
+
+def fetch_number_from_api(number_type):
+    url = f"http://third-party-server/numbers/{number_type}"
+    try:
+        response = requests.get(url, timeout=0.5)
+        response.raise_for_status()
+        number = response.json().get('number')
+        return number
+    except (requests.Timeout, requests.RequestException):
+        return None
+
+@app.route('/numbers/<string:number_type>', methods=['GET'])
+def get_numbers(number_type):
+    if number_type not in ['p', 'f', 'e', 'r']:
+        return jsonify({"error": "Invalid number type"}), 400
+
+    new_number = fetch_number_from_api(number_type)
+    if new_number is None:
+        return jsonify({"error": "Failed to fetch number"}), 500
+
+    with lock:
+        if new_number not in stored_numbers:
+            if len(stored_numbers) >= WINDOW_SIZE:
+                stored_numbers.pop(0)
+            stored_numbers.append(new_number)
+
+        numbers_before = stored_numbers[:-1]
+        numbers_after = stored_numbers[:]
+        average = sum(stored_numbers) / len(stored_numbers) if stored_numbers else 0
+
+    return jsonify({
+        "numbers_before": numbers_before,
+        "numbers_after": numbers_after,
+        "average": average
+    })
+
+if __name__ == '__main__':
+    app.run(debug=True)
