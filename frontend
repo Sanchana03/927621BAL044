@@ -1,0 +1,49 @@
+import React, { useState } from 'react';
+import axios from 'axios';
+
+function App() {
+  const [numberType, setNumberType] = useState('');
+  const [numbersBefore, setNumbersBefore] = useState([]);
+  const [numbersAfter, setNumbersAfter] = useState([]);
+  const [average, setAverage] = useState(0);
+
+  const fetchNumbers = async () => {
+    try {
+      const response = await axios.get(`http://localhost:5000/numbers/${numberType}`);
+      const data = response.data;
+      setNumbersBefore(data.numbers_before);
+      setNumbersAfter(data.numbers_after);
+      setAverage(data.average);
+    } catch (error) {
+      console.error('Error fetching numbers', error);
+    }
+  };
+
+  return (
+    <div className="App">
+      <h1>Average Calculator</h1>
+      <select value={numberType} onChange={(e) => setNumberType(e.target.value)}>
+        <option value="">Select number type</option>
+        <option value="p">Prime</option>
+        <option value="f">Fibonacci</option>
+        <option value="e">Even</option>
+        <option value="r">Random</option>
+      </select>
+      <button onClick={fetchNumbers}>Fetch Numbers</button>
+      <div>
+        <h2>Numbers Before</h2>
+        <pre>{JSON.stringify(numbersBefore, null, 2)}</pre>
+      </div>
+      <div>
+        <h2>Numbers After</h2>
+        <pre>{JSON.stringify(numbersAfter, null, 2)}</pre>
+      </div>
+      <div>
+        <h2>Average</h2>
+        <pre>{average}</pre>
+      </div>
+    </div>
+  );
+}
+
+export default App;
